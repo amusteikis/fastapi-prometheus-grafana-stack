@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana-oss
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter
+    container_name: node_exporter
+    ports:
+      - "9100:9100"
+
+  postgres:
+     image: postgres
+     container_name: postgres
+     environment:
+       POSTGRES_USER: user
+       POSTGRES_PASSWORD: password
+       POSTGRES_DB: mydb
+     ports:
+       - "5432:5432"     
+  
+  api:
+    image: tiangolo/uvicorn-gunicorn-fastapi:python3.9
+    volumes:
+      - ./src:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    networks:
+      - monitoring
