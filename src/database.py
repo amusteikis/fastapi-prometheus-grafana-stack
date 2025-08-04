@@ -1,5 +1,6 @@
 import psycopg2
 import os
+from logger import logger
 
 # Conection parameters
 DB_HOST = os.getenv("DB_HOST", "postgres")
@@ -18,6 +19,7 @@ def get_connection():
 
 # Read items from the database
 def get_items():
+    logger.info("Fetching items from the database")
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, name FROM items")

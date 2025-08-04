@@ -8,6 +8,8 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring
 
   grafana:
     image: grafana/grafana-oss
@@ -16,12 +18,19 @@ services:
       - "3000:3000"
     depends_on:
       - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin 
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - monitoring
 
   node_exporter:
     image: quay.io/prometheus/node-exporter
     container_name: node_exporter
     ports:
       - "9100:9100"
+    networks:
+      - monitoring
 
   postgres:
      image: postgres
@@ -32,14 +41,34 @@ services:
        POSTGRES_DB: mydb
      ports:
        - "5432:5432"     
-  
+     networks:
+       - monitoring
+
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter
+    container_name: postgres_exporter
+    environment:
+      DATA_SOURCE_NAME: "user:password@tcp(postgres:5432)/mydb?sslmode=disable"
+    depends_on:
+      - postgres
+    networks:
+      - monitoring
+
   api:
     image: tiangolo/uvicorn-gunicorn-fastapi:python3.9
+    container_name: api
     volumes:
       - ./src:/app
+      - ./requirements.txt:/app/requirements.txt
     ports:
       - "8000:8000"
     depends_on:
       - postgres
     networks:
       - monitoring
+    command:
+      sh -c "pip install -r /app/requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000"
+
+networks:
+  monitoring:
+    driver: bridge

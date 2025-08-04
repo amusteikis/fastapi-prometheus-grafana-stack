@@ -1,8 +1,10 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from fastapi import Response
 from pydantic import BaseModel
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from starlette.middleware.base import BaseHTTPMiddleware
+from logger import logger
 import time
 
 from database import get_items, insert_item
@@ -21,6 +23,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
         except Exception as e:
+            logger.error(f"Error processing request: {e}")
             ERROR_COUNT.inc()
             raise e
         process_time = time.time() - start_time
@@ -41,6 +44,7 @@ async def exception_handler(request: Request, exc: Exception):
 # / Health check endpoint
 @app.get("/health")
 def health():
+    logger.info("Health check endpoint called")
     return {"status": "ok"}
 
 # /items endpoint (GET & POST)
@@ -62,4 +66,5 @@ def trigger_error():
 #/metrics endpoint for Prometheus
 @app.get("/metrics")
 def metrics():
-    return JSONResponse(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
