@@ -3,11 +3,17 @@ version: "3.8"
 services:
   prometheus:
     image: prom/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
     container_name: prometheus
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
     networks:
       - monitoring
 
@@ -21,6 +27,10 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin 
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
     networks:
       - monitoring
 
@@ -43,12 +53,16 @@ services:
        - "5432:5432"     
      networks:
        - monitoring
+     volumes:
+       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+     command: >
+        postgres -c listen_addresses="*"
 
   postgres_exporter:
     image: prometheuscommunity/postgres-exporter
     container_name: postgres_exporter
     environment:
-      DATA_SOURCE_NAME: "user:password@tcp(postgres:5432)/mydb?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://user:password@postgres:5432/mydb?sslmode=disable"
     depends_on:
       - postgres
     networks:
@@ -72,3 +86,6 @@ services:
 networks:
   monitoring:
     driver: bridge
+volumes:
+  grafana-data:
+  prometheus-data:
