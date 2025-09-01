@@ -9,7 +9,7 @@ route:
 receivers:
   - name: slack
     slack_configs:
-      - api_url: "https://hooks.slack.com/services/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"   # tu webhook
+      - api_url_file: /run/secrets/slack_webhook_url
         channel: "#alerts"
         send_resolved: true
         title: '{{ .CommonLabels.alertname }} — {{ .CommonLabels.instance }} ({{ .Status }})'
