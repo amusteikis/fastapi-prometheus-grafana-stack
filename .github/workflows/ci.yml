@@ -1,4 +1,4 @@
-name: CI 
+name: CI
 
 on:
   push:
@@ -10,67 +10,68 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   e2e-linux:
     name: End-to-End (Docker Compose)
-    runs-on: 
-      - ubuntu-latest
-    timeout-minutes: 20 
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
-      - name: Checkout 
+      - name: Checkout
         uses: actions/checkout@v4
-    
-      - name: Prepare env and dummy secrets 
+
+      - name: Prepare env and dummy secrets
         run: |
-          set -eux 
-          # Secure paths
+          set -euo pipefail
           mkdir -p alertmanager
-          # Webhook dummy 
-          echo "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX" > alertmanager/slack_webhook_url
-          # .env 
-          [[ -f .env]] || cat > .env <<'EOF'
+          # Webhook dummy (no parece real, no dispara secret scanning)
+          echo "DUMMY_WEBHOOK" > alertmanager/slack_webhook_url
+
+          # Crea .env solo si no existe (forma segura, sin if/fi que rompe con heredoc)
+          [ -f .env ] || cat > .env <<'EOF'
           PROMETHEUS_URL=http://localhost:9090
           GRAFANA_URL=http://localhost:3000
           ALERTMANAGER_URL=http://localhost:9093
           GRAFANA_ADMIN_USER=admin
-          GRAFANA_ADMIN_PASSWORD=Averro123!
-          EOF 
-          chmod +x start.sh || true
-          chmod +x vaklidate.ps1 || true
-      
-      - name: Show Versions
+          GRAFANA_ADMIN_PASSWORD=admin
+          EOF
+
+
+      - name: Show versions
         run: |
           docker --version
-          docker-compose --version
+          docker compose version
           bash --version
-      
+          pwsh --version
+
       - name: Build & Start (Compose)
         run: |
-          docker compose -f docker-compose.yml -p grafana-prometheus-stack up -d --remove-orphans 
-      
-      - name: Smoke Validation
+          docker compose -f docker-compose.yml -p grafana-prometheus-stack up -d --remove-orphans
+
+      - name: Smoke Validation (PowerShell)
+        shell: pwsh
         run: |
           ./validate.ps1
-      
-      - name: Compose PS 
+
+      - name: Compose PS
         if: always()
         run: docker compose -f docker-compose.yml -p grafana-prometheus-stack ps
-      
+
       - name: Collect Logs on failure
         if: failure()
-        run: | 
+        run: |
           docker compose -f docker-compose.yml -p grafana-prometheus-stack logs --no-color > compose.log || true
-      
+
       - name: Upload Logs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: compose-logs
           path: compose.log
-      
-      - name: Down stack 
+
+      - name: Down stack
         if: always()
         run: |
-          docker compose -f docker-compose.yml -p grafana-prometheus-stack down -v 
+          docker compose -f docker-compose.yml -p grafana-prometheus-stack down -v
