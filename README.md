@@ -1,8 +1,9 @@
 # Observability Stack: Prometheus + Grafana + Alertmanager + Exporters
 
-[![CI](https://github.com/<USER>/<REPO>/actions/workflows/ci.yml/badge.svg)](https://github.com/<USER>/<REPO>/actions/workflows/ci.yml)
+[![CI](https://github.com/amusteikis/fastapi-prometheus-grafana-stack/actions/workflows/ci.yml/badge.svg)](https://github.com/amusteikis/fastapi-prometheus-grafana-stack/actions/workflows/ci.yml)
 ![Made with Docker](https://img.shields.io/badge/Made%20with-Docker-2496ED?logo=docker&logoColor=white)
 ![Grafana](https://img.shields.io/badge/Observability-Grafana%20%2B%20Prometheus-F46800)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
 > A ready-to-use observability stack for demos/MVPs: metrics, dashboards, and Slack alerts.  
 > Includes cross-platform scripts (Bash/PowerShell) and CI in GitHub Actions with smoke tests.
