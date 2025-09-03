@@ -30,22 +30,27 @@ function Validate-Prometheus {
   Log "Prometheus health"
   Wait-HttpOk -Name "Prometheus" -BaseUrl $PrometheusUrl -Path "/-/healthy" -Expect 200 | Out-Null
 
-  Log "Esperando targets UP en Prometheus"
+  Log "Esperando targets en Prometheus (state=any)"
   $upCount = 0; $total = 0
   for ($i=1; $i -le $Retries; $i++) {
     try {
-      $tg = Invoke-RestMethod -Uri ($PrometheusUrl + "/api/v1/targets") -TimeoutSec 5 -ErrorAction Stop
+      $tg = Invoke-RestMethod -Uri ($PrometheusUrl + "/api/v1/targets?state=any") -TimeoutSec 5 -ErrorAction Stop
       $active = @($tg.data.activeTargets)
-      $total = $active.Count
+      $total  = $active.Count
       $upCount = @($active | Where-Object { $_.health -eq "up" }).Count
-      if ($total -gt 0) { break }
-    } catch {}
+      Write-Host ("[validate] intento {0}: up={1} total={2}" -f $i,$upCount,$total)
+      if ($total -gt 0 -and $upCount -ge 1) { break }
+    } catch {
+      Write-Host "[validate] intento $i : targets API aún no disponible"
+    }
     Start-Sleep -Seconds $SleepSecs
   }
-  if ($total -lt 1) { throw "Prometheus sin targets" }
+
+  if ($total -lt 1)  { throw "Prometheus sin targets (total=0) tras $Retries intentos" }
+  if ($upCount -lt 1){ throw "Prometheus sin targets UP (up=0 de $total) tras $Retries intentos" }
+
   Ok ("Targets {0}/{1}" -f $upCount,$total)
 }
-
 # ------------------ Grafana ------------------
 function Validate-Grafana {
   Log "Grafana health"

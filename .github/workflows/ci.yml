@@ -53,7 +53,7 @@ jobs:
       - name: Smoke Validation (PowerShell)
         shell: pwsh
         run: |
-          ./validate.ps1
+          ./validate.ps1 -Retries 60 -SleepSecs 5
 
       - name: Compose PS
         if: always()
